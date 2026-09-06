@@ -187,7 +187,12 @@ router.post('/register', [
         id: user.id,
         email: user.email,
         full_name: user.full_name,
-        role: user.role
+        role: user.role,
+        cnic: user.cnic,
+        phone: user.phone,
+        address: user.address,
+        is_verified: user.is_verified || false,
+        uploaded_documents: user.uploaded_documents || []
       },
       token
     });
@@ -269,7 +274,9 @@ router.post('/login', [
         cnic: user.cnic,
         phone: user.phone,
         address: user.address,
-        avatar_url: user.avatar_url
+        avatar_url: user.avatar_url,
+        is_verified: user.is_verified || false,
+        uploaded_documents: user.uploaded_documents || []
       },
       token
     });
@@ -367,7 +374,7 @@ router.put('/profile', authenticateToken, [
     if (inter_total_marks !== undefined) updates.inter_total_marks = inter_total_marks || null;
     if (is_verified !== undefined) updates.is_verified = is_verified;
     if (uploaded_documents !== undefined) updates.uploaded_documents = uploaded_documents;
-    
+
     if (education !== undefined) {
       // Fetch current user to merge the education fields instead of overwriting completely
       const currentUser = await User.findById(req.user.id);

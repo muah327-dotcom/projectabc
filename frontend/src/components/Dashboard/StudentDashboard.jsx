@@ -135,16 +135,18 @@ const StudentDashboard = () => {
         <p className="mt-2 text-cyan-100">
           Manage your applications, check your eligibility, and track your admission status all in one place.
         </p>
-        <div className="mt-4 flex items-center gap-2 bg-white dark:bg-gray-800/15 backdrop-blur-sm rounded-lg px-4 py-2.5 border border-white/20">
-          <Upload className="h-4 w-4 text-amber-500 dark:text-yellow-300 flex-shrink-0" />
-          <p className="text-sm text-gray-700 dark:text-white">
-            <span className="font-semibold text-amber-600 dark:text-yellow-300">Verification Required:</span> Non-optional documents (CNIC, Photograph, Matric & Intermediate certificates) are mandatory.{' '}
-            <Link to="/dashboard/documents" className="underline font-semibold text-primary-600 dark:text-primary-300 hover:text-primary-700 dark:hover:text-yellow-200 transition-colors">
-              Upload all mandatory documents
-            </Link>{' '}
-            to verify your profile and enable application submission.
-          </p>
-        </div>
+        {!user?.is_verified && (
+          <div className="mt-4 flex items-center gap-2 bg-white dark:bg-gray-800/15 backdrop-blur-sm rounded-lg px-4 py-2.5 border border-white/20">
+            <Upload className="h-4 w-4 text-amber-500 dark:text-yellow-300 flex-shrink-0" />
+            <p className="text-sm text-gray-700 dark:text-white">
+              <span className="font-semibold text-amber-600 dark:text-yellow-300">Verification Required:</span> Non-optional documents (CNIC, Photograph, Matric & Intermediate certificates) are mandatory.{' '}
+              <Link to="/dashboard/documents" className="underline font-semibold text-primary-600 dark:text-primary-300 hover:text-primary-700 dark:hover:text-yellow-200 transition-colors">
+                Upload all mandatory documents
+              </Link>{' '}
+              to verify your profile and enable application submission.
+            </p>
+          </div>
+        )}
         <div className="mt-4 flex flex-wrap gap-3">
           <Link to="/dashboard/applications/new" className="inline-flex items-center px-4 py-2 bg-white dark:bg-gray-800 text-cyan-700 rounded-lg font-medium hover:bg-cyan-50 transition-colors">
             <FileText className="h-4 w-4 mr-2" />
@@ -218,9 +220,9 @@ const StudentDashboard = () => {
                     </div>
                     <div className="text-right">
                       <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${app.status === 'approved' ? 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300' :
-                          app.status === 'rejected' ? 'bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-300' :
-                            app.status === 'pending' ? 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-300' :
-                              'bg-primary-100 dark:bg-primary-900/30 text-primary-800 dark:text-primary-300'
+                        app.status === 'rejected' ? 'bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-300' :
+                          app.status === 'pending' ? 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-300' :
+                            'bg-primary-100 dark:bg-primary-900/30 text-primary-800 dark:text-primary-300'
                         }`}>
                         {app.status}
                       </span>

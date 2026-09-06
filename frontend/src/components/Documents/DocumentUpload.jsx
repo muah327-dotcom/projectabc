@@ -825,18 +825,18 @@ const performTargetedFieldOcr = async (canvas, lines, docCategory, fieldType = '
         }
       }
     } else if (fieldType === 'father_name') {
-       if (docCategory === 'cnic') {
-         if (/(?:Father(?:[''`]?s)?(?:\s*[\/\&]\s*(?:Husband|Guardian|Mother)(?:[''`]?s)?)?|Husband(?:[''`]?s)?|Name\s*of\s*Father|FatherName|F\/Name|Walad)/i.test(text) &&
-             !/(?:Name|Narne|Namo)/i.test(text.replace(/(?:Father|Husband|Name)/gi, ''))) {
-           labelLine = line;
-           break;
-         }
-       } else {
-         if (/(?:Father|Husband|S\/O|D\/O|W\/O|Son\s+of|Daughter\s+of|Name\s*of\s*Father)/i.test(text)) {
-           labelLine = line;
-           break;
-         }
-       }
+      if (docCategory === 'cnic') {
+        if (/(?:Father(?:[''`]?s)?(?:\s*[\/\&]\s*(?:Husband|Guardian|Mother)(?:[''`]?s)?)?|Husband(?:[''`]?s)?|Name\s*of\s*Father|FatherName|F\/Name|Walad)/i.test(text) &&
+          !/(?:Name|Narne|Namo)/i.test(text.replace(/(?:Father|Husband|Name)/gi, ''))) {
+          labelLine = line;
+          break;
+        }
+      } else {
+        if (/(?:Father|Husband|S\/O|D\/O|W\/O|Son\s+of|Daughter\s+of|Name\s*of\s*Father)/i.test(text)) {
+          labelLine = line;
+          break;
+        }
+      }
     }
   }
 
@@ -892,9 +892,9 @@ const performTargetedFieldOcr = async (canvas, lines, docCategory, fieldType = '
 const extractSubjectMarks = (text) => {
   const subjects = [];
   const lines = text.split('\n').map(l => l.trim()).filter(l => l.length > 0);
-  
+
   const knownSubjects = [
-    'URDU', 'ENGLISH', 'ISLAMIYAT', 'ISLAMIC EDUCATION', 'PAKISTAN STUDIES', 
+    'URDU', 'ENGLISH', 'ISLAMIYAT', 'ISLAMIC EDUCATION', 'PAKISTAN STUDIES',
     'MATHEMATICS', 'PHYSICS', 'CHEMISTRY', 'BIOLOGY', 'COMPUTER SCIENCE',
     'GENERAL SCIENCE', 'ISLAMIC STUDIES', 'PUNJABI', 'ARABIC', 'EDUCATION',
     'ECONOMICS', 'CIVICS', 'HISTORY', 'GEOGRAPHY', 'STATISTICS', 'ACCOUNTING'
@@ -904,16 +904,16 @@ const extractSubjectMarks = (text) => {
     if (/(?:DETAIL\s*OF\s*MARKS|MARKS\s*OBTAINED|SUBJECTS?|TOTAL|MAXIMUM|ROLL\s*NO|NAME|DATE|GRADE|RESULT|BOARD|BISE)/i.test(line)) {
       continue;
     }
-    
+
     // Allow optional leading serial number e.g. "1. URDU"
     // Capture subject name (letters/spaces) and then a sequence of numbers (with spaces)
     // Ignore optional trailing grade like A+, B, PASS, FAIL
     const match = line.match(/^(?:[\d\s\.\)\-]*)([A-Za-z\s&]+)[\s=:\-]+([\d\sOolISBZ]{2,})(?:[A-F][+-]?|A-1|PASS|FAIL)?\s*$/i);
-    
+
     if (match) {
       let subjName = match[1].replace(/[^A-Za-z\s]/g, '').replace(/\s+/g, ' ').trim().toUpperCase();
       let numsStr = match[2].trim();
-      
+
       if (subjName.length < 3 || ['THE', 'AND', 'FOR', 'PART', 'OBTAINED', 'GRAND', 'AGGREGATE'].includes(subjName)) {
         continue;
       }
@@ -923,19 +923,19 @@ const extractSubjectMarks = (text) => {
         // Fix OCR digits
         const fixedNums = fixNumericRuns(numsStr);
         const numbers = fixedNums.split(/\s+/).map(n => parseInt(n, 10)).filter(n => !isNaN(n));
-        
+
         if (numbers.length > 0) {
           // The last number is typically the Total Obtained Marks for that subject
           let obtainedMarks = numbers[numbers.length - 1];
-          
+
           if (obtainedMarks >= 0 && obtainedMarks <= 250) {
-             subjects.push({ name: subjName, obtainedMarks });
+            subjects.push({ name: subjName, obtainedMarks });
           }
         }
       }
     }
   }
-  
+
   // Clean duplicates (in case of double read)
   const uniqueSubjects = [];
   const seenNames = new Set();
@@ -945,7 +945,7 @@ const extractSubjectMarks = (text) => {
       uniqueSubjects.push(sub);
     }
   }
-  
+
   return uniqueSubjects;
 };
 
@@ -1064,16 +1064,16 @@ const extractAcademicData = (text) => {
     const obtCandidate = parseInt(fixOcrDigits(match[1]), 10);
     const totCandidate = parseInt(fixOcrDigits(match[2]), 10);
     if (obtCandidate >= 100 && obtCandidate <= 1200 &&
-        STD_TOTALS.includes(totCandidate) &&
-        obtCandidate < totCandidate) {
+      STD_TOTALS.includes(totCandidate) &&
+      obtCandidate < totCandidate) {
       obtainedMarks = obtCandidate;
       totalMarks = totCandidate;
       break;
     }
     // Fallback: total is in range but not an exact standard value
     if (obtCandidate >= 100 && obtCandidate <= 1200 &&
-        totCandidate >= 300 && totCandidate <= 1200 &&
-        obtCandidate < totCandidate) {
+      totCandidate >= 300 && totCandidate <= 1200 &&
+      obtCandidate < totCandidate) {
       obtainedMarks = obtCandidate;
       totalMarks = totCandidate;
       break;
@@ -2310,39 +2310,39 @@ const DocumentUpload = () => {
         // Map document types and check if key fields are missing
         const docCategory = (documentType === 'matric' || documentType === 'intermediate' || documentType === 'transcript')
           ? 'academic' : documentType === 'cnic' ? 'cnic' : 'other';
-          
+
         let pass1Data = docCategory === 'cnic' ? extractCNICData(extractedText) : extractAcademicData(extractedText);
-        
+
         // Targeted OCR as fallback for Name if full-text extraction failed
         if (!pass1Data.name) {
           let targetedNameData = await performTargetedFieldOcr(processedCanvas, ocrLines, docCategory, 'name');
           if (targetedNameData && targetedNameData.text && targetedNameData.confidence > 60) {
-             const cleanedTargetedName = cleanNameCandidate(targetedNameData.text);
-             if (cleanedTargetedName && scoreNameCandidate(cleanedTargetedName) > 0) {
-                 pass1Data.name = cleanedTargetedName;
-                 pass1Data.name_verification_needed = true;
-                 console.log(`[OCR] Used targeted OCR for name: "${cleanedTargetedName}" (confidence: ${Math.round(targetedNameData.confidence)})`);
-             } else {
-                 console.log(`[OCR] Rejected targeted OCR for name: "${targetedNameData.text}" (failed validation)`);
-             }
+            const cleanedTargetedName = cleanNameCandidate(targetedNameData.text);
+            if (cleanedTargetedName && scoreNameCandidate(cleanedTargetedName) > 0) {
+              pass1Data.name = cleanedTargetedName;
+              pass1Data.name_verification_needed = true;
+              console.log(`[OCR] Used targeted OCR for name: "${cleanedTargetedName}" (confidence: ${Math.round(targetedNameData.confidence)})`);
+            } else {
+              console.log(`[OCR] Rejected targeted OCR for name: "${targetedNameData.text}" (failed validation)`);
+            }
           } else if (targetedNameData && targetedNameData.text) {
-             console.log(`[OCR] Rejected targeted OCR for name due to low confidence (${Math.round(targetedNameData.confidence)})`);
+            console.log(`[OCR] Rejected targeted OCR for name due to low confidence (${Math.round(targetedNameData.confidence)})`);
           }
         }
-        
+
         // Targeted OCR as fallback for Father Name if full-text extraction failed
         if (!pass1Data.father_name) {
           let targetedFatherNameData = await performTargetedFieldOcr(processedCanvas, ocrLines, docCategory, 'father_name');
           if (targetedFatherNameData && targetedFatherNameData.text && targetedFatherNameData.confidence > 60) {
-             const cleanedTargetedFatherName = cleanNameCandidate(targetedFatherNameData.text);
-             if (cleanedTargetedFatherName && scoreNameCandidate(cleanedTargetedFatherName) > 0 && cleanedTargetedFatherName.toLowerCase() !== pass1Data.name?.toLowerCase()) {
-                 pass1Data.father_name = cleanedTargetedFatherName;
-                 console.log(`[OCR] Used targeted OCR for father name: "${cleanedTargetedFatherName}" (confidence: ${Math.round(targetedFatherNameData.confidence)})`);
-             } else {
-                 console.log(`[OCR] Rejected targeted OCR for father name: "${targetedFatherNameData.text}" (failed validation)`);
-             }
+            const cleanedTargetedFatherName = cleanNameCandidate(targetedFatherNameData.text);
+            if (cleanedTargetedFatherName && scoreNameCandidate(cleanedTargetedFatherName) > 0 && cleanedTargetedFatherName.toLowerCase() !== pass1Data.name?.toLowerCase()) {
+              pass1Data.father_name = cleanedTargetedFatherName;
+              console.log(`[OCR] Used targeted OCR for father name: "${cleanedTargetedFatherName}" (confidence: ${Math.round(targetedFatherNameData.confidence)})`);
+            } else {
+              console.log(`[OCR] Rejected targeted OCR for father name: "${targetedFatherNameData.text}" (failed validation)`);
+            }
           } else if (targetedFatherNameData && targetedFatherNameData.text) {
-             console.log(`[OCR] Rejected targeted OCR for father name due to low confidence (${Math.round(targetedFatherNameData.confidence)})`);
+            console.log(`[OCR] Rejected targeted OCR for father name due to low confidence (${Math.round(targetedFatherNameData.confidence)})`);
           }
         }
 
@@ -2394,29 +2394,29 @@ const DocumentUpload = () => {
       } else {
         extractedData = { ...extractCNICData(extractedText), ...extractAcademicData(extractedText) };
       }
-      
+
       // Override fields with targeted extraction ONLY if full-text extraction failed
       if (!isPdf && !extractedData.name && typeof processedCanvas !== 'undefined' && typeof ocrLines !== 'undefined') {
-          let targetedNameData = await performTargetedFieldOcr(processedCanvas, ocrLines, docCategoryFinal, 'name');
-          if (targetedNameData && targetedNameData.text && targetedNameData.confidence > 60) {
-              const cleanedTargetedName = cleanNameCandidate(targetedNameData.text);
-              if (cleanedTargetedName && scoreNameCandidate(cleanedTargetedName) > 0) {
-                  extractedData.name = cleanedTargetedName;
-                  extractedData.name_verification_needed = true;
-                  console.log(`[OCR] Fallback: Used targeted OCR for name: "${cleanedTargetedName}"`);
-              }
+        let targetedNameData = await performTargetedFieldOcr(processedCanvas, ocrLines, docCategoryFinal, 'name');
+        if (targetedNameData && targetedNameData.text && targetedNameData.confidence > 60) {
+          const cleanedTargetedName = cleanNameCandidate(targetedNameData.text);
+          if (cleanedTargetedName && scoreNameCandidate(cleanedTargetedName) > 0) {
+            extractedData.name = cleanedTargetedName;
+            extractedData.name_verification_needed = true;
+            console.log(`[OCR] Fallback: Used targeted OCR for name: "${cleanedTargetedName}"`);
           }
+        }
       }
-      
+
       if (!isPdf && !extractedData.father_name && typeof processedCanvas !== 'undefined' && typeof ocrLines !== 'undefined') {
-          let targetedFatherNameData = await performTargetedFieldOcr(processedCanvas, ocrLines, docCategoryFinal, 'father_name');
-          if (targetedFatherNameData && targetedFatherNameData.text && targetedFatherNameData.confidence > 60) {
-              const cleanedTargetedFatherName = cleanNameCandidate(targetedFatherNameData.text);
-              if (cleanedTargetedFatherName && scoreNameCandidate(cleanedTargetedFatherName) > 0 && cleanedTargetedFatherName.toLowerCase() !== extractedData.name?.toLowerCase()) {
-                  extractedData.father_name = cleanedTargetedFatherName;
-                  console.log(`[OCR] Fallback: Used targeted OCR for father name: "${cleanedTargetedFatherName}"`);
-              }
+        let targetedFatherNameData = await performTargetedFieldOcr(processedCanvas, ocrLines, docCategoryFinal, 'father_name');
+        if (targetedFatherNameData && targetedFatherNameData.text && targetedFatherNameData.confidence > 60) {
+          const cleanedTargetedFatherName = cleanNameCandidate(targetedFatherNameData.text);
+          if (cleanedTargetedFatherName && scoreNameCandidate(cleanedTargetedFatherName) > 0 && cleanedTargetedFatherName.toLowerCase() !== extractedData.name?.toLowerCase()) {
+            extractedData.father_name = cleanedTargetedFatherName;
+            console.log(`[OCR] Fallback: Used targeted OCR for father name: "${cleanedTargetedFatherName}"`);
           }
+        }
       }
 
       // Auto-Reject Blurry / Unreadable Documents with Formal Centered Modal
@@ -2803,7 +2803,7 @@ const DocumentUpload = () => {
     setSaving(true);
     try {
       const token = localStorage.getItem('token');
-      
+
       const educationPayload = { matric: {}, intermediate: {} };
       uploadedFiles.forEach(file => {
         if ((file.type === 'matric' || file.extractedData?.document_level === 'matric') && file.extractedData?.subjects) {
@@ -2817,7 +2817,7 @@ const DocumentUpload = () => {
           educationPayload.intermediate.obtainedMarks = file.extractedData.obtained_marks || formData.inter_obtained_marks;
         }
       });
-      
+
       const payload = {
         full_name: sanitizeToEnglishName(formData.full_name),
         phone: formData.phone,
@@ -2867,17 +2867,20 @@ const DocumentUpload = () => {
     }
   };
 
+  // Union in-memory uploads with persisted user.uploaded_documents from DB
+  const uploadedDocTypeIds = Array.from(new Set([
+    ...uploadedFiles.map(f => f.type),
+    ...(user?.uploaded_documents || [])
+  ]));
   // Check if a document type is already uploaded
-  const isDocUploaded = (typeId) => uploadedFiles.some(f => f.type === typeId);
+  const isDocUploaded = (typeId) => uploadedDocTypeIds.includes(typeId);
 
   // Mandatory document verification computation
   const mandatoryDocTypes = documentTypes.filter(d => d.required);
-  const uploadedDocTypeIds = uploadedFiles.map(f => f.type);
   const missingMandatoryDocs = mandatoryDocTypes.filter(d => !uploadedDocTypeIds.includes(d.id));
   const isFullyVerified = Boolean(
     user?.is_verified &&
-    missingMandatoryDocs.length === 0 &&
-    uploadedFiles.length >= mandatoryDocTypes.length
+    missingMandatoryDocs.length === 0
   );
   const renderSubjects = (subjects) => {
     if (!subjects || subjects.length === 0) return null;
@@ -3266,7 +3269,7 @@ const DocumentUpload = () => {
                       {declarations.confirmCorrect && <CheckCircle className="h-3.5 w-3.5 text-white" />}
                     </div>
                   </div>
-                   <span className="text-sm text-gray-700 dark:text-gray-300 group-hover:text-gray-900 dark:group-hover:text-white transition-colors">
+                  <span className="text-sm text-gray-700 dark:text-gray-300 group-hover:text-gray-900 dark:group-hover:text-white transition-colors">
                     I confirm that the extracted information is correct and I have reviewed all the auto-filled fields for accuracy.
                   </span>
                 </label>
@@ -3282,7 +3285,7 @@ const DocumentUpload = () => {
                       {declarations.understandFalseInfo && <CheckCircle className="h-3.5 w-3.5 text-white" />}
                     </div>
                   </div>
-                   <span className="text-sm text-gray-700 dark:text-gray-300 group-hover:text-gray-900 dark:group-hover:text-white transition-colors">
+                  <span className="text-sm text-gray-700 dark:text-gray-300 group-hover:text-gray-900 dark:group-hover:text-white transition-colors">
                     I understand that providing false information may result in cancellation of my admission.
                   </span>
                 </label>
