@@ -51,7 +51,9 @@ const StudentDashboard = () => {
         const apps = appsData.applications || [];
         setStats({
           total: apps.length,
-          pending: apps.filter(a => a.status === 'pending').length,
+          pending: apps.filter(a =>
+            a.status === 'pending' || a.status === 'under_review' || a.status === 'waitlisted'
+          ).length,
           approved: apps.filter(a => a.status === 'approved' || a.status === 'confirmed').length,
           rejected: apps.filter(a => a.status === 'rejected' || a.status === 'dropped').length
         });
@@ -159,32 +161,34 @@ const StudentDashboard = () => {
         </div>
       </div>
 
-      {/* Stats Grid */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        {[
-          { label: 'Total Applications', value: stats?.total || 0, icon: FileText, color: 'cyan' },
-          { label: 'Pending', value: stats?.pending || 0, icon: Clock, color: 'yellow' },
-          { label: 'Approved', value: stats?.approved || 0, icon: CheckCircle, color: 'green' },
-          { label: 'Rejected', value: stats?.rejected || 0, icon: AlertCircle, color: 'red' },
-        ].map((stat, index) => {
-          const Icon = stat.icon;
-          const colorClasses = {
-            cyan: 'bg-cyan-500/10 text-cyan-400 border-cyan-500/20',
-            yellow: 'bg-yellow-500/10 text-yellow-400 border-yellow-500/20',
-            green: 'bg-green-500/10 text-green-400 border-green-500/20',
-            red: 'bg-red-500/10 text-red-400 border-red-500/20'
-          };
-          return (
-            <div key={index} className="bg-white dark:bg-gray-800 rounded-xl p-4 lg:p-6 border border-gray-200 dark:border-gray-700 hover:border-gray-300 shadow-sm transition-colors">
-              <div className={`inline-flex p-3 rounded-lg border ${colorClasses[stat.color]}`}>
-                <Icon className="h-5 w-5 lg:h-6 lg:w-6" />
+      {/* Stats Grid — hidden for students with 0 applications */}
+      {stats?.total > 0 && (
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+          {[
+            { label: 'Total Applications', value: stats.total, icon: FileText, color: 'cyan' },
+            { label: 'Pending', value: stats.pending, icon: Clock, color: 'yellow' },
+            { label: 'Approved', value: stats.approved, icon: CheckCircle, color: 'green' },
+            { label: 'Rejected', value: stats.rejected, icon: AlertCircle, color: 'red' },
+          ].map((stat, index) => {
+            const Icon = stat.icon;
+            const colorClasses = {
+              cyan: 'bg-cyan-500/10 text-cyan-400 border-cyan-500/20',
+              yellow: 'bg-yellow-500/10 text-yellow-400 border-yellow-500/20',
+              green: 'bg-green-500/10 text-green-400 border-green-500/20',
+              red: 'bg-red-500/10 text-red-400 border-red-500/20'
+            };
+            return (
+              <div key={index} className="bg-white dark:bg-gray-800 rounded-xl p-4 lg:p-6 border border-gray-200 dark:border-gray-700 hover:border-gray-300 shadow-sm transition-colors">
+                <div className={`inline-flex p-3 rounded-lg border ${colorClasses[stat.color]}`}>
+                  <Icon className="h-5 w-5 lg:h-6 lg:w-6" />
+                </div>
+                <p className="mt-4 text-2xl lg:text-3xl font-bold text-gray-900 dark:text-white">{stat.value}</p>
+                <p className="text-sm text-gray-500 dark:text-gray-400">{stat.label}</p>
               </div>
-              <p className="mt-4 text-2xl lg:text-3xl font-bold text-gray-900 dark:text-white">{stat.value}</p>
-              <p className="text-sm text-gray-500 dark:text-gray-400">{stat.label}</p>
-            </div>
-          );
-        })}
-      </div>
+            );
+          })}
+        </div>
+      )}
 
       <div className="grid lg:grid-cols-3 gap-6">
         {/* Recent Applications */}
