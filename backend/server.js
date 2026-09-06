@@ -1,4 +1,6 @@
 import express from 'express';
+import dns from 'dns';
+dns.setServers(['8.8.8.8', '1.1.1.1']);
 import cors from 'cors';
 import compression from 'compression';
 import dotenv from 'dotenv';
@@ -7,6 +9,9 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import connectDB from './config/db.js';
 import { initGridFS } from './utils/gridfs.js';
+import Application from './models/Application.js';
+import User from './models/User.js';
+import Newsletter from './models/Newsletter.js';
 import authRoutes from './routes/auth.js';
 import applicationRoutes from './routes/applications.js';
 import adminRoutes from './routes/admin.js';
@@ -89,6 +94,55 @@ app.use('/api/analytics', analyticsRoutes);
 app.use('/api/ocr', ocrRoutes);
 app.use('/api/recommendations', recommendationRoutes);
 
+app.get('/api/stats/public', async (req, res) => {
+  try {
+    const [totalApplications, totalApplicants] = await Promise.all([
+      Application.countDocuments(),
+      User.countDocuments({ role: 'student' })
+    ]);
+
+    res.json({
+      totalApplications,
+      totalApplicants
+    });
+  } catch (error) {
+    console.error('Public stats error:', error);
+    res.status(500).json({ error: 'Failed to fetch public statistics' });
+  }
+});
+
+app.post('/api/newsletter/subscribe', async (req, res) => {
+  try {
+    const { email } = req.body;
+    if (!email || typeof email !== 'string') {
+      return res.status(400).json({ error: 'Please provide a valid email address.' });
+    }
+
+    const trimmedEmail = email.trim().toLowerCase();
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(trimmedEmail)) {
+      return res.status(400).json({ error: 'Please provide a valid email address.' });
+    }
+
+    const existingSubscriber = await Newsletter.findOne({ email: trimmedEmail });
+    if (existingSubscriber) {
+      return res.status(409).json({ error: 'This email is already subscribed to our newsletter.' });
+    }
+
+    const subscriber = await Newsletter.create({ email: trimmedEmail });
+    res.status(201).json({
+      success: true,
+      message: 'Thank you for subscribing! You will receive our latest updates.'
+    });
+  } catch (error) {
+    if (error.code === 11000) {
+      return res.status(409).json({ error: 'This email is already subscribed to our newsletter.' });
+    }
+    console.error('Newsletter subscription error:', error);
+    res.status(500).json({ error: 'Failed to subscribe. Please try again later.' });
+  }
+});
+
 app.get('/api/health', (req, res) => {
   const dbState = {
     0: 'disconnected',
@@ -97,8 +151,8 @@ app.get('/api/health', (req, res) => {
     3: 'disconnecting'
   }[mongoose.connection.readyState] || 'unknown';
 
-  res.json({ 
-    status: 'OK', 
+  res.json({
+    status: 'OK',
     message: 'AI Admission System API is running',
     database: dbState,
     env: {

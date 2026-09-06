@@ -15,7 +15,10 @@ import {
   ArrowRight,
   Play,
   Star,
-  Quote
+  Quote,
+  Mail,
+  Loader2,
+  AlertCircle
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
@@ -233,7 +236,7 @@ const Navigation = ({ onNavClick }) => {
 };
 
 // Hero Section
-const HeroSection = () => {
+const HeroSection = ({ stats }) => {
   return (
     <section id="home" className="relative min-h-screen pt-20 lg:pt-0 overflow-hidden">
       {/* Background gradient */}
@@ -317,9 +320,9 @@ const HeroSection = () => {
               className="grid grid-cols-3 gap-8 mt-12 pt-8 border-t border-gray-200"
             >
               {[
-                { value: 5000, suffix: '+', label: 'Applications' },
-                { value: 99, suffix: '.5%', label: 'Accuracy' },
-                { value: 80, suffix: '%', label: 'Time Saved' },
+                { value: stats?.totalApplications ?? 0, suffix: '', label: 'Applications' },
+                { value: stats?.totalApplicants ?? 0, suffix: '', label: 'Applicants' },
+                { value: 99, suffix: '.5%', label: 'OCR Accuracy' },
               ].map((stat, index) => (
                 <div key={index} className="text-center lg:text-left">
                   <div className="text-2xl sm:text-3xl font-bold text-cyan-600">
@@ -357,13 +360,13 @@ const HeroSection = () => {
                   <div className="grid grid-cols-3 gap-4 mb-4">
                     <div className="bg-gray-700/50 rounded-lg p-4">
                       <div className="text-xs text-gray-400 mb-1">Applications</div>
-                      <div className="text-xl font-bold text-white">2,847</div>
-                      <div className="text-xs text-green-400 mt-1">+12%</div>
+                      <div className="text-xl font-bold text-white">{stats?.totalApplications ?? 0}</div>
+                      <div className="text-xs text-green-400 mt-1">Live</div>
                     </div>
                     <div className="bg-gray-700/50 rounded-lg p-4">
-                      <div className="text-xs text-gray-400 mb-1">Processed</div>
-                      <div className="text-xl font-bold text-white">1,923</div>
-                      <div className="text-xs text-green-400 mt-1">+8%</div>
+                      <div className="text-xs text-gray-400 mb-1">Applicants</div>
+                      <div className="text-xl font-bold text-white">{stats?.totalApplicants ?? 0}</div>
+                      <div className="text-xs text-green-400 mt-1">Live</div>
                     </div>
                     <div className="bg-gray-700/50 rounded-lg p-4">
                       <div className="text-xs text-gray-400 mb-1">Accuracy</div>
@@ -396,7 +399,7 @@ const HeroSection = () => {
 };
 
 // About Section
-const AboutSection = () => {
+const AboutSection = ({ stats }) => {
   const features = [
     {
       icon: Users,
@@ -494,16 +497,18 @@ const AboutSection = () => {
             className="bg-gradient-to-br from-cyan-50 to-cyan-100 rounded-2xl p-6 border border-cyan-200"
           >
             <div className="text-4xl font-bold text-cyan-600 mb-2">
-              <AnimatedCounter end={5000} suffix="+" />
+              <AnimatedCounter end={stats?.totalApplications ?? 0} suffix="" />
             </div>
-            <div className="text-gray-700 font-medium">Applications Processed</div>
+            <div className="text-gray-700 font-medium">Total Applications Received</div>
           </motion.div>
           <motion.div
             variants={scaleIn}
             className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-2xl p-6 border border-blue-200"
           >
-            <div className="text-4xl font-bold text-blue-600 mb-2">4.8/5</div>
-            <div className="text-gray-700 font-medium">Student Satisfaction</div>
+            <div className="text-4xl font-bold text-blue-600 mb-2">
+              <AnimatedCounter end={stats?.totalApplicants ?? 0} suffix="" />
+            </div>
+            <div className="text-gray-700 font-medium">Total Registered Applicants</div>
           </motion.div>
         </motion.div>
       </div>
@@ -618,7 +623,7 @@ const ProblemSection = () => {
 };
 
 // Solution Section
-const SolutionSection = () => {
+const SolutionSection = ({ stats }) => {
   const solutions = [
     {
       title: "OCR-Based Form Filling",
@@ -680,7 +685,7 @@ const SolutionSection = () => {
                   <div className="bg-white rounded-2xl shadow-xl p-6">
                     <div className="flex items-center justify-between mb-6">
                       <div>
-                        <div className="text-2xl font-bold text-gray-900">1000</div>
+                        <div className="text-2xl font-bold text-gray-900">{stats?.totalApplications ?? 0}</div>
                         <div className="text-sm text-gray-500">Total Applications</div>
                       </div>
                       <div className="w-12 h-12 bg-cyan-100 rounded-xl flex items-center justify-center">
@@ -932,8 +937,209 @@ const ContactSection = () => {
   );
 };
 
+// Newsletter Modal Component
+const NewsletterModal = ({ isOpen, onClose, initialEmail = '' }) => {
+  const [email, setEmail] = useState(initialEmail);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+  const [success, setSuccess] = useState(false);
+
+  useEffect(() => {
+    if (isOpen) {
+      setEmail(initialEmail);
+      setError('');
+      setSuccess(false);
+      setLoading(false);
+    }
+  }, [isOpen, initialEmail]);
+
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape' && isOpen) {
+        onClose();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen, onClose]);
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    const trimmed = email.trim();
+    if (!trimmed) {
+      setError('Please enter your email address.');
+      return;
+    }
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(trimmed)) {
+      setError('Please enter a valid email address.');
+      return;
+    }
+
+    setLoading(true);
+    setError('');
+
+    try {
+      const res = await fetch('/api/newsletter/subscribe', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: trimmed })
+      });
+      const data = await res.json();
+
+      if (res.ok) {
+        setSuccess(true);
+      } else {
+        setError(data.error || data.message || 'Failed to subscribe. Please try again.');
+      }
+    } catch (err) {
+      console.error('Newsletter subscribe error:', err);
+      setError('Network error. Please check your connection and try again.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <AnimatePresence>
+      {isOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6">
+          {/* Backdrop */}
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={onClose}
+            className="fixed inset-0 bg-gray-900/60 backdrop-blur-sm transition-opacity"
+          />
+
+          {/* Modal Content */}
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95, y: 20 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.95, y: 20 }}
+            transition={{ duration: 0.25, ease: [0.22, 1, 0.36, 1] }}
+            className="relative w-full max-w-md bg-white rounded-2xl shadow-2xl p-6 sm:p-8 z-10 overflow-hidden border border-gray-100"
+          >
+            {/* Close Button */}
+            <button
+              onClick={onClose}
+              className="absolute top-4 right-4 p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-full transition-colors cursor-pointer"
+              aria-label="Close modal"
+            >
+              <X className="w-5 h-5" />
+            </button>
+
+            {success ? (
+              <div className="text-center py-4">
+                <div className="w-16 h-16 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <CheckCircle2 className="w-8 h-8" />
+                </div>
+                <h3 className="text-2xl font-bold text-gray-900 mb-2">You're Subscribed!</h3>
+                <p className="text-gray-600 text-sm mb-6 leading-relaxed">
+                  Thank you for subscribing to GGC Township updates. You will receive admission announcements and important notifications directly to your inbox.
+                </p>
+                <button
+                  type="button"
+                  onClick={onClose}
+                  className="w-full py-3 bg-gradient-to-r from-cyan-500 to-cyan-600 hover:from-cyan-600 hover:to-cyan-700 text-white font-medium rounded-xl transition-all shadow-lg shadow-cyan-500/25 cursor-pointer"
+                >
+                  Done
+                </button>
+              </div>
+            ) : (
+              <div>
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="w-12 h-12 bg-cyan-100 text-cyan-600 rounded-xl flex items-center justify-center flex-shrink-0">
+                    <Mail className="w-6 h-6" />
+                  </div>
+                  <div>
+                    <h3 className="text-xl font-bold text-gray-900">Stay Updated</h3>
+                    <p className="text-xs text-gray-500">Subscribe to our newsletter</p>
+                  </div>
+                </div>
+
+                <p className="text-gray-600 text-sm mb-5 leading-relaxed">
+                  Get the latest updates on admissions, merit list announcements, and college events delivered straight to your inbox.
+                </p>
+
+                {error && (
+                  <div className="mb-4 p-3 bg-rose-50 border border-rose-200 text-rose-700 text-xs rounded-lg flex items-start gap-2">
+                    <AlertCircle className="w-4 h-4 flex-shrink-0 mt-0.5" />
+                    <span>{error}</span>
+                  </div>
+                )}
+
+                <form onSubmit={handleSubmit} className="space-y-4">
+                  <div>
+                    <label htmlFor="newsletter-popup-email" className="block text-xs font-semibold text-gray-700 uppercase tracking-wider mb-2">
+                      Email Address
+                    </label>
+                    <div className="relative">
+                      <input
+                        id="newsletter-popup-email"
+                        type="email"
+                        value={email}
+                        onChange={(e) => {
+                          setEmail(e.target.value);
+                          if (error) setError('');
+                        }}
+                        placeholder="e.g. yourname@example.com"
+                        disabled={loading}
+                        className="w-full px-4 py-3 pl-10 bg-gray-50 border border-gray-200 rounded-xl text-sm text-gray-900 placeholder-gray-400 focus:bg-white focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/20 outline-none transition-all disabled:opacity-50"
+                        autoFocus
+                      />
+                      <Mail className="w-4 h-4 text-gray-400 absolute left-3.5 top-3.5 pointer-events-none" />
+                    </div>
+                  </div>
+
+                  <div className="flex gap-3 pt-2">
+                    <button
+                      type="button"
+                      onClick={onClose}
+                      disabled={loading}
+                      className="flex-1 py-3 px-4 bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium rounded-xl text-sm transition-colors cursor-pointer disabled:opacity-50"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="submit"
+                      disabled={loading}
+                      className="flex-1 py-3 px-4 bg-gradient-to-r from-cyan-500 to-cyan-600 hover:from-cyan-600 hover:to-cyan-700 text-white font-medium rounded-xl text-sm transition-all shadow-lg shadow-cyan-500/25 flex items-center justify-center gap-2 cursor-pointer disabled:opacity-75"
+                    >
+                      {loading ? (
+                        <>
+                          <Loader2 className="w-4 h-4 animate-spin" />
+                          <span>Subscribing...</span>
+                        </>
+                      ) : (
+                        <span>Subscribe</span>
+                      )}
+                    </button>
+                  </div>
+                </form>
+
+                <p className="text-center text-[11px] text-gray-400 mt-4">
+                  We respect your privacy. No spam, ever.
+                </p>
+              </div>
+            )}
+          </motion.div>
+        </div>
+      )}
+    </AnimatePresence>
+  );
+};
+
 // Footer
-const Footer = ({ onNavClick }) => {
+const Footer = ({ onNavClick, onOpenNewsletter }) => {
+  const [footerEmail, setFooterEmail] = useState('');
+
+  const handleJoinClick = (e) => {
+    e.preventDefault();
+    onOpenNewsletter(footerEmail);
+  };
+
   const handleClick = (e, href) => {
     if (href.startsWith('#')) {
       e.preventDefault();
@@ -1001,16 +1207,21 @@ const Footer = ({ onNavClick }) => {
             <p className="text-sm text-gray-400 mb-4">
               Subscribe to get the latest updates on admissions and college news.
             </p>
-            <div className="flex gap-2">
+            <form onSubmit={handleJoinClick} className="flex gap-2">
               <input
                 type="email"
+                value={footerEmail}
+                onChange={(e) => setFooterEmail(e.target.value)}
                 placeholder="Your email"
-                className="flex-1 px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-sm focus:ring-2 focus:ring-cyan-500 outline-none"
+                className="flex-1 px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-sm text-white focus:ring-2 focus:ring-cyan-500 outline-none"
               />
-              <button className="px-4 py-2 bg-cyan-500 hover:bg-cyan-600 rounded-lg text-sm font-medium transition-colors">
+              <button
+                type="submit"
+                className="px-4 py-2 bg-cyan-500 hover:bg-cyan-600 text-white rounded-lg text-sm font-medium transition-colors cursor-pointer"
+              >
                 Join
               </button>
-            </div>
+            </form>
           </div>
         </div>
 
@@ -1020,7 +1231,9 @@ const Footer = ({ onNavClick }) => {
           </p>
           <div className="flex items-center gap-4">
             <motion.a
-              href="#"
+              href="https://facebook.com"
+              target="_blank"
+              rel="noopener noreferrer"
               whileHover={{ scale: 1.1, y: -2 }}
               className="w-10 h-10 bg-gray-800 rounded-lg flex items-center justify-center hover:bg-cyan-500 transition-colors"
               aria-label="Facebook"
@@ -1030,7 +1243,9 @@ const Footer = ({ onNavClick }) => {
               </svg>
             </motion.a>
             <motion.a
-              href="#"
+              href="https://twitter.com"
+              target="_blank"
+              rel="noopener noreferrer"
               whileHover={{ scale: 1.1, y: -2 }}
               className="w-10 h-10 bg-gray-800 rounded-lg flex items-center justify-center hover:bg-cyan-500 transition-colors"
               aria-label="Twitter"
@@ -1040,7 +1255,9 @@ const Footer = ({ onNavClick }) => {
               </svg>
             </motion.a>
             <motion.a
-              href="#"
+              href="https://linkedin.com"
+              target="_blank"
+              rel="noopener noreferrer"
               whileHover={{ scale: 1.1, y: -2 }}
               className="w-10 h-10 bg-gray-800 rounded-lg flex items-center justify-center hover:bg-cyan-500 transition-colors"
               aria-label="LinkedIn"
@@ -1050,7 +1267,9 @@ const Footer = ({ onNavClick }) => {
               </svg>
             </motion.a>
             <motion.a
-              href="#"
+              href="https://instagram.com"
+              target="_blank"
+              rel="noopener noreferrer"
               whileHover={{ scale: 1.1, y: -2 }}
               className="w-10 h-10 bg-gray-800 rounded-lg flex items-center justify-center hover:bg-cyan-500 transition-colors"
               aria-label="Instagram"
@@ -1068,6 +1287,29 @@ const Footer = ({ onNavClick }) => {
 
 // Main Landing Page Component
 const LandingPage = () => {
+  const [stats, setStats] = useState({ totalApplications: 0, totalApplicants: 0 });
+  const [isNewsletterOpen, setIsNewsletterOpen] = useState(false);
+  const [newsletterInitialEmail, setNewsletterInitialEmail] = useState('');
+
+  useEffect(() => {
+    fetch('/api/stats/public')
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (data) {
+          setStats({
+            totalApplications: typeof data.totalApplications === 'number' ? data.totalApplications : 0,
+            totalApplicants: typeof data.totalApplicants === 'number' ? data.totalApplicants : 0,
+          });
+        }
+      })
+      .catch((err) => console.error('Error fetching public stats:', err));
+  }, []);
+
+  const handleOpenNewsletter = (email = '') => {
+    setNewsletterInitialEmail(email);
+    setIsNewsletterOpen(true);
+  };
+
   const handleNavClick = (e, href) => {
     e.preventDefault();
     const element = document.querySelector(href);
@@ -1079,13 +1321,18 @@ const LandingPage = () => {
   return (
     <div className="min-h-screen bg-white">
       <Navigation onNavClick={handleNavClick} />
-      <HeroSection />
-      <AboutSection />
+      <HeroSection stats={stats} />
+      <AboutSection stats={stats} />
       <ProblemSection />
-      <SolutionSection />
+      <SolutionSection stats={stats} />
       <FAQSection />
       <ContactSection />
-      <Footer onNavClick={handleNavClick} />
+      <Footer onNavClick={handleNavClick} onOpenNewsletter={handleOpenNewsletter} />
+      <NewsletterModal
+        isOpen={isNewsletterOpen}
+        onClose={() => setIsNewsletterOpen(false)}
+        initialEmail={newsletterInitialEmail}
+      />
     </div>
   );
 };
